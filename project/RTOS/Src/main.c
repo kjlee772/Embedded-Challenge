@@ -138,7 +138,7 @@ PUTCHAR_PROTOTYPE
   */
 
 
- //왼쪽으로 90도 돌기위한 함수
+/************************ 왼쪽으로 90도 회전 함수 ***********************/
  void turnLeft_90(){
 	 printf("\r\n\r\n Turn Left 90\r\n");
                int i;
@@ -156,7 +156,7 @@ PUTCHAR_PROTOTYPE
                 }
 }
  
- // 오른쪽으로 90도 돌기 위한 함수
+/************************ 오른쪽으로 90도 회전 함수 ***********************/
 void turnRight_90(){
 	printf("\r\n\r\n Turn Right 90\r\n");
 	int i;
@@ -174,11 +174,13 @@ void turnRight_90(){
 	}
 }
 
+
+/************************ 적외선 탐지 왼쪽 회전 함수 ***********************/
 void turnLeft_10(){
 	printf("\r\n\r\n Turn Left 10\r\n");
 	int i;
 	
-	for(i=0; i<5; i++){
+	for(i=0; i<3; i++){
 		Motor_Stop();
 		
 		motorInterrupt1 = 1;
@@ -191,11 +193,13 @@ void turnLeft_10(){
 	}
 }
 
+
+/************************ 적외선 탐지 오른쪽 회전 함수 ***********************/
 void turnRight_10(){
 	printf("\r\n\r\n Turn Right 10\r\n");
 	int i;
 	
-	for(i=0; i<5; i++){
+	for(i=0; i<3; i++){
 		Motor_Stop();
 		
 		motorInterrupt2 = 1;
@@ -208,25 +212,25 @@ void turnRight_10(){
 	}
 }
 
-void go_straight(){
-	printf("\r\n\r\n GO STRAIGHT \r\n");
-	
-	Motor_Stop();
-	
+
+/************************ 직전 조금 하는 함수 ***********************/
+void forward_little(){
+	printf("\r\n\r\n Forward little \r\n");
 	Motor_Forward();
-	osDelay(500);
-	
+	osDelay(1000);
 }
 
 
-
 /*********************************  task ************************************/
-
-
 uint32_t sonic_forwardwall = 0;
 uint32_t sonic_rightwall = 0;
 uint32_t sonic_leftwall = 0;
 
+uint32_t sonic_forward_so_far = 0;
+uint32_t sonic_right_so_far = 0;
+uint32_t sonic_left_so_far = 0;
+
+uint32_t enter_flag = 0;
 
 uint32_t ir_leftwall = 0;
 uint32_t ir_rightwall =0;
@@ -237,67 +241,66 @@ void Detect_obstacle(){
 
 	for(;;)
     {
-		//				osDelay(1000);	//물체 인식하기 전에 벽에 박는 경우는 osDelay를 줄여서 좀더 많이 검사하도록 수정한다.
+//			osDelay(2000);	//물체 인식하기 전에 벽에 박는 경우는 osDelay를 줄여서 좀더 많이 검사하도록 수정한다.
+			osDelay(10);
 			
-				if( uwDiffCapture2/58 > 0 && uwDiffCapture2/58 <10  )      //  앞 벽 있을 때
-            {         
-                  sonic_forwardwall = 1;		
-                  printf("\r\n forward = %d", uwDiffCapture2/58);
-									
-									if(uwDiffCapture1 <= uwDiffCapture3){       // 오른 벽 있을 때
-										sonic_rightwall = 1;
-										sonic_leftwall = 0;
-										printf("\r\n right = %d", uwDiffCapture1/58);
-										printf("\r\n left = %d", uwDiffCapture3/58);
-									}
-									else{				//왼 벽 있을 때
-										sonic_rightwall = 0;
-										sonic_leftwall = 1;
-										printf("\r\n right = %d", uwDiffCapture1/58);
-										printf("\r\n left = %d", uwDiffCapture3/58);
-									}
-            }
-            else			//앞 벽 없을 때
-            {
-                  sonic_forwardwall = 0;
-                  printf("\r\n forward = %d", uwDiffCapture2/58);
-							
-									if(uwDiffCapture1 <= uwDiffCapture3){       // 오른 벽 있을 때
-										sonic_rightwall = 1;
-										sonic_leftwall = 0;
-										printf("\r\n right = %d", uwDiffCapture1/58);
-										printf("\r\n left = %d", uwDiffCapture3/58);
-									}
-									else{				//왼 벽 있을 때
-										sonic_rightwall = 0;
-										sonic_leftwall = 1;
-										printf("\r\n right = %d", uwDiffCapture1/58);
-										printf("\r\n left = %d", uwDiffCapture3/58);
-									}
-            }
-						
-
-    }
-}
-
-void Motor_forandback(){
-	osDelay(200);  // 태스크 만든 후 약간의 딜레이
-	printf("\r\n Motor_control");
-	Motor_Forward();
-	
-   for(;;)
-    {
-            if(sonic_forwardwall == 1)
-						{
-							Motor_Stop();
-						  Motor_Backward();
-							osDelay(10); 
-							Motor_Stop();
-						}
-						else{
-							Motor_Forward();
-						}
-    }
+			
+			/************************ 벽이 멀리 있는 경우에 플래그(초음파) ***********************/
+			if(uwDiffCapture2/58 >= 130){			// 앞 벽이 100 이상일 때
+				sonic_forward_so_far = 1;
+			}
+			else{
+				sonic_forward_so_far = 0;
+			}
+			if(uwDiffCapture1/58 >= 130){			// 오른 벽이 100 이상일 때
+				sonic_right_so_far = 1;
+			}
+			else{
+				sonic_right_so_far = 0;
+			}
+			if(uwDiffCapture3/58 >= 130){			// 왼 벽이 100 이상일 때
+				sonic_left_so_far = 1;
+			}
+			else{
+				sonic_left_so_far = 0;
+			}
+			
+			
+			/************************ 벽이 가까이 있는 경우에 플래그(초음파) ***********************/
+			if(uwDiffCapture2/58 > 0 && uwDiffCapture2/58 <= 8){		// 앞 벽이 있을 때
+				sonic_forwardwall = 1;
+			}
+			else{
+				sonic_forwardwall = 0;
+			}
+			if(uwDiffCapture1/58 > 0 && uwDiffCapture1/58 <= 8){		// 오른 벽이 있을 때
+				sonic_rightwall = 1;
+			}
+			else{
+				sonic_rightwall = 0;
+			}
+			if(uwDiffCapture3/58 > 0 && uwDiffCapture3/58 <= 8){		// 왼 벽이 있을 때
+				sonic_leftwall = 1;
+			}
+			else{
+				sonic_leftwall = 0;
+			}
+			
+			printf("\r\n forward: %d ", uwDiffCapture2/58);
+			printf("\r\n right: %d ", uwDiffCapture1/58);
+			printf("\r\n left: %d ", uwDiffCapture3/58);
+			
+			printf( "\r\n sonic_forward_so_far: %d", sonic_forward_so_far );
+			printf( "\r\n sonic_right_so_far: %d", sonic_right_so_far );
+			printf( "\r\n sonic_left_so_far: %d", sonic_left_so_far );
+			
+			printf( "\r\n sonic_forward: %d", sonic_forwardwall );
+			printf( "\r\n sonic_right: %d", sonic_rightwall );
+			printf( "\r\n sonic_left: %d", sonic_leftwall );
+			
+			
+			
+		}
 }
 
 void Motor_control(){
@@ -308,43 +311,74 @@ void Motor_control(){
    for(;;)
 	{
 		
-		// 초음파 센서 부분
-		if(sonic_forwardwall == 1){		// 앞 벽 있을 때
-			Motor_Stop();
-			
-			if(sonic_rightwall == 1){		//오른 벽 있을 때
-				turnLeft_90();
+		/************************  초음파를 이용한 벽 탐지 부분 ***********************/
+		if(uwDiffCapture1/58 <70 && uwDiffCapture3/58 <70){		//  미로에 들어갔을 때
+			enter_flag = 1;
+		}
+		
+		if(sonic_forwardwall == 1 && sonic_rightwall == 1){			// 앞, 오른 벽 있을 때
+			turnLeft_90();
+			Motor_Forward();
+		}
+		if(sonic_forwardwall ==1 && sonic_rightwall == 1){				//앞, 왼쪽 벽 있을 때
+			turnRight_90();
+			Motor_Forward();
+		}
+		
+		if(enter_flag == 1){
+			if(uwDiffCapture2/58 > 40 && uwDiffCapture1/58 > 90){
+				turnRight_10();
+				turnRight_10();
+				turnRight_10();
 				Motor_Forward();
 			}
-			else if(sonic_leftwall == 1){		// 왼 벽 있을 때
+			if(uwDiffCapture2/58 > 40 && uwDiffCapture3/58 > 90){
+				turnLeft_10();
+				turnLeft_10();
+				turnRight_10();
+				Motor_Forward();
+			}
+		}
+		
+		if(sonic_forwardwall ==1){				//앞에 벽 있을 때 거리 재서
+			if(uwDiffCapture1 < uwDiffCapture3){			//오른쪽이 더 가까울 때
 				turnRight_90();
 				Motor_Forward();
 			}
-			
+			else{									//왼쪽이 더 가까울 때
+				turnLeft_90();
+				Motor_Forward();
+			}
 		}
-		else{			// 앞 벽 없을 때
+		else{				//벽 없으면 직진
 			Motor_Forward();
-			
 		}
-
 		
+		printf("\r\n\r\n Enter Flag: %d", enter_flag );
 		
+		/************************  적외선을 이용한 벽 탐지 부분 ***********************/
+		if(ir_rightwall == 0 && ir_leftwall == 0){			// 장애물이 없을 때
+			Motor_Forward();
+		}
 		
-		// 적외선 센서 부분
 		if(ir_rightwall == 1){		// 오른 벽 있을 때
 			turnLeft_10();
 			Motor_Forward();
 		}
 	
-		
 		if(ir_leftwall == 1){			// 왼 벽 있을 때
 			turnRight_10();
 			Motor_Forward();
 		}
-
 		
-	}		
+		if(ir_rightwall == 1 && ir_leftwall == 1){			//180도 돌기
+			turnRight_90();
+			turnRight_90();
+			Motor_Forward();
+		}
 		
+		
+	}
 }
 
 
@@ -358,8 +392,7 @@ void IR_Sensor(){
      if(uhADCxLeft >2000) uhADCxLeft= 2000;
      else if(uhADCxLeft<100) uhADCxLeft = 100;
      printf("\r\nIR sensor Left = %d", uhADCxLeft);
-		 	 
-      
+		 
      HAL_ADC_Start(&AdcHandle2);
      uhADCxRight = HAL_ADC_GetValue(&AdcHandle2);
      HAL_ADC_PollForConversion(&AdcHandle2, 0xFF);
@@ -368,29 +401,29 @@ void IR_Sensor(){
      printf("\r\nIR sensor Right = %d", uhADCxRight);
 		 
 		 
-		 
-		 if(uhADCxRight >= 800){			// 오른 벽에 가까울 때
+		 /************************ 벽이 가까이 있는 경우에 플래그(적외선) ***********************/
+		 if(uhADCxRight >= 810){			// 오른 벽에 가까울 때
 			 ir_rightwall = 1;
-			 printf("\r\nIR sensor Right = %d", ir_rightwall);
+			 //printf("\r\nIR sensor Right = %d", ir_rightwall);
 		 }
 		 else{
 			 ir_rightwall = 0;
-			 printf("\r\nIR sensor Right = %d", ir_rightwall);
+			 //printf("\r\nIR sensor Right = %d", ir_rightwall);
 		 }
 		 
 		 
-		 if(uhADCxLeft >= 550){			// 왼 벽에 가까울 때
+		 if(uhADCxLeft >= 800){			// 왼 벽에 가까울 때
 			 ir_leftwall = 1;
-			 printf("\r\nIR sensor Left = %d", ir_leftwall);
+			 //printf("\r\nIR sensor Left = %d", ir_leftwall);
 		 }
 		 else{
 			 ir_leftwall = 0;
-			 printf("\r\nIR sensor Left = %d", ir_leftwall);
+			 //printf("\r\nIR sensor Left = %d", ir_leftwall);
 		 }
 		 
 		 
-		 
-//		 osDelay(1000);
+		 osDelay(10);
+//		 osDelay(2000);
 	 }
  }
 
@@ -608,7 +641,6 @@ int main(void)
 	 xTaskCreate( Detect_obstacle, "obstacle", 1000, NULL, 2, NULL);
 	 xTaskCreate( IR_Sensor, "IR", 1000, NULL, 2, NULL);
 	 xTaskCreate( Motor_control, "motor", 1000, NULL, 2, NULL);
-   //xTaskCreate( Motor_forandback, "motor", 1000, NULL, 2, NULL);
 
 	 vTaskStartScheduler();
 	 
