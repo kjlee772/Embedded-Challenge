@@ -241,8 +241,6 @@ uint32_t sonic_forward_so_far = 0;
 uint32_t sonic_right_so_far = 0;
 uint32_t sonic_left_so_far = 0;
 
-uint32_t enter_flag = 0;
-
 uint32_t ir_leftwall = 0;
 uint32_t ir_rightwall =0;
 
@@ -323,34 +321,62 @@ void Motor_control(){
 	{
 		
 		/************************  초음파를 이용한 벽 탐지 부분 ***********************/
-		if(sonic_leftwall == 1){
+		if(sonic_leftwall == 1){		// 왼쪽 벽이 너무 가까울 때
 			turnRight_10();
 			Motor_Forward();
 		}
-		if(sonic_rightwall == 1){
+		if(sonic_rightwall == 1){		//오른쪽 벽이 너무 가까울 때
 			turnLeft_10();
 			Motor_Forward();
 		}
+		
 		if(sonic_forwardwall == 1){			// 앞 벽 있을 때
 			if(uwDiffCapture1 < uwDiffCapture3){		//  오른쪽 가까울 때
-				if(sonic_rightwall == 1){
-					turnLeft_90();
+				if(sonic_rightwall == 1){		//오른쪽 벽에 붙어있을 때
+					turnLeft_90();					//왼쪽으로 회전
 					Motor_Forward();
 				}
-				else{
-					turnRight_90();
+				else{					//아니면
+					turnRight_90();				//오른쪽으로 회전
 					Motor_Forward();
 				}
 			}
 			else{			//왼쪽 가까울 때
-				if(sonic_leftwall == 1){
-					turnRight_90();
+				if(sonic_leftwall == 1){			//왼쪽 벽에 붙어있을 때
+					turnRight_90();			//오른쪽으로 회전
+					Motor_Forward();
+				}
+				else{			//아니면
+					turnLeft_90();		//왼쪽으로 회전
+					Motor_Forward();	
+				}
+			}
+		}
+		else{			// 앞에 벽이 없을 때
+			if(sonic_right_so_far == 0 && sonic_left_so_far == 0){			//좌우 벽이 너무 멀리 있지 않을 때
+				if(sonic_rightwall == 1){		//오른쪽 벽에 붙어있으면
+					Motor_Forward();
+				}
+				else if(sonic_leftwall == 1){		//왼쪽 벽에 붙어있으면
 					Motor_Forward();
 				}
 				else{
-					turnLeft_90();
-					Motor_Forward();
+					if(uwDiffCapture2 < uwDiffCapture1){		//오른쪽이 더 멀면
+						turnRight_90();
+						Motor_Forward();
+					}
+					else if(uwDiffCapture2 < uwDiffCapture3){		//왼쪽이 더 멀면
+						turnLeft_90();
+						Motor_Forward();
+					}
+					else{
+						Motor_Forward();
+					}
 				}
+				
+			}
+			else{						//좌우 벽이 너무 멀리 있을 때
+				Motor_Forward();
 			}
 		}
 		
